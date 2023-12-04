@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"golang-rest-api/config"
 	"log"
 	"os"
 
@@ -11,8 +12,8 @@ import (
 )
 
 const (
-	dialect  = "pgx"
-	dbString = "host=localhost user=user password=pass dbname=db port=5432 sslmode=disable"
+	dialect     = "pgx"
+	fmtDBString = "host=%s user=%s password=%s dbname=%s port=%d sslmode=disable"
 )
 
 var (
@@ -31,6 +32,8 @@ func main() {
 	}
 
 	command := args[0]
+	c := config.NewDB()
+	dbString := fmt.Sprintf(fmtDBString, c.Host, c.Username, c.Password, c.DBName, c.Port)
 
 	db, err := goose.OpenDBWithDriver(dialect, dbString)
 	if err != nil {
