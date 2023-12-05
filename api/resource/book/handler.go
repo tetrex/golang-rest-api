@@ -1,12 +1,22 @@
 package book
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
+	"gorm.io/gorm"
 )
 
-type API struct{}
+type API struct {
+	repository *Repository
+}
+
+func New(db *gorm.DB) *API {
+	return &API{
+		repository: NewRepository(db),
+	}
+}
 
 // List godoc
 //
@@ -19,7 +29,21 @@ type API struct{}
 //	@failure		500	{object}	err.Error
 //	@router			/books [get]
 func (a *API) List(c echo.Context) error {
-	return c.String(http.StatusOK, "list")
+	books, err := a.repository.List()
+	if err != nil {
+		// handle later
+		return c.String(http.StatusBadRequest, "error")
+	}
+
+	if len(books) == 0 {
+		return c.String(http.StatusBadRequest, "error")
+	}
+
+	u := books.ToDto()
+	c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+	c.Response().WriteHeader(http.StatusOK)
+	return json.NewEncoder(c.Response()).Encode(u)
+
 }
 
 // Create godoc

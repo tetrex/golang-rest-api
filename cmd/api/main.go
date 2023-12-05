@@ -7,7 +7,13 @@ import (
 	"io"
 	"log"
 	"net/http"
+
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
+	gormlogger "gorm.io/gorm/logger"
 )
+
+const fmtDBString = "host=%s user=%s password=%s dbname=%s port=%d sslmode=disable"
 
 //	@title			MYAPP API
 //	@version		1.0
@@ -19,12 +25,27 @@ import (
 //	@license.name	MIT License
 //	@license.url	https://github.com/learning-cloud-native-go/myapp/blob/master/LICENSE
 
-//	@host		localhost:8080
-//	@basePath	/v1
+// @host		localhost:8080
+// @basePath	/v1
 func main() {
 
 	c := config.New()
-	r := router.New()
+
+	var logLevel gormlogger.LogLevel
+	if c.DB.Debug {
+		logLevel = gormlogger.Info
+	} else {
+		logLevel = gormlogger.Error
+	}
+
+	dbString := fmt.Sprintf(fmtDBString, c.DB.Host, c.DB.Username, c.DB.Password, c.DB.DBName, c.DB.Port)
+	db, err := gorm.Open(postgres.Open(dbString), &gorm.Config{Logger: gormlogger.Default.LogMode(logLevel)})
+	if err != nil {
+		log.Fatal("DB connection start failure")
+		return
+	}
+
+	r := router.New(db)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/hello", hello)

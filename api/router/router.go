@@ -8,16 +8,17 @@ import (
 
 	"github.com/labstack/echo/v4"
 	echoSwagger "github.com/swaggo/echo-swagger" // middlerware for echo-swagger
+	"gorm.io/gorm"
 )
 
-func New() *echo.Echo {
+func New(db *gorm.DB) *echo.Echo {
 	r := echo.New()
 
 	r.GET("/livez", health.Read)
 	r.GET("/swagger/*", echoSwagger.WrapHandler)
 
 	g := r.Group("/v1")
-	bookAPI := &book.API{}
+	bookAPI := book.New(db)
 
 	g.GET("/books", bookAPI.List)
 	g.POST("/books", bookAPI.Create)
