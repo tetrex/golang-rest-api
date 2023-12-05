@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
 )
@@ -60,7 +61,22 @@ func (a *API) List(c echo.Context) error {
 //	@failure		500	{object}	err.Error
 //	@router			/books [post]
 func (a *API) Create(c echo.Context) error {
-	return c.String(http.StatusOK, "create")
+	form := new(Form)
+	if err := c.Bind(form); err != nil {
+		return c.String(http.StatusBadRequest, "bad request")
+	}
+
+	newBook := form.ToModel()
+	newBook.ID = uuid.New()
+
+	_, err := a.repository.Create(newBook)
+	if err != nil {
+		return c.String(http.StatusBadRequest, "cant create")
+	}
+
+	c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+	c.Response().WriteHeader(http.StatusOK)
+	return c.String(http.StatusCreated, "ok")
 }
 
 // Read godoc
