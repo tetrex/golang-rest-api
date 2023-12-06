@@ -8,6 +8,8 @@ import (
 	"log"
 	"net/http"
 
+	validatorUil "golang-rest-api/util/validator"
+
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	gormlogger "gorm.io/gorm/logger"
@@ -30,6 +32,7 @@ const fmtDBString = "host=%s user=%s password=%s dbname=%s port=%d sslmode=disab
 func main() {
 
 	c := config.New()
+	v := validatorUil.New()
 
 	var logLevel gormlogger.LogLevel
 	if c.DB.Debug {
@@ -45,7 +48,7 @@ func main() {
 		return
 	}
 
-	r := router.New(db)
+	r := router.New(db, v)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/hello", hello)
