@@ -2,6 +2,7 @@ package book
 
 import (
 	"encoding/json"
+
 	"net/http"
 
 	"github.com/go-playground/validator/v10"
@@ -10,6 +11,7 @@ import (
 	"gorm.io/gorm"
 
 	e "golang-rest-api/api/resource/common/err"
+	validatorUtil "golang-rest-api/util/validator"
 )
 
 type API struct {
@@ -70,6 +72,17 @@ func (a *API) Create(c echo.Context) error {
 		return c.String(http.StatusBadRequest, string(e.RespJSONDecodeFailure))
 	}
 
+	// for struct validation
+	if err := a.validator.Struct(form); err != nil {
+		respBody, err := json.Marshal(validatorUtil.ToErrResponse(err))
+		if err != nil {
+			return c.String(http.StatusBadRequest, string(e.RespJSONEncodeFailure))
+		}
+
+		return c.String(http.StatusBadRequest, string(respBody))
+	}
+
+	// actual update
 	newBook := form.ToModel()
 	newBook.ID = uuid.New()
 
@@ -78,6 +91,7 @@ func (a *API) Create(c echo.Context) error {
 		return c.String(http.StatusBadRequest, string(e.RespDBDataInsertFailure))
 	}
 
+	// response headers
 	c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 	c.Response().WriteHeader(http.StatusOK)
 	return c.String(http.StatusCreated, newBook.ID.String())
@@ -141,6 +155,15 @@ func (a *API) Update(c echo.Context) error {
 	form := &Form{}
 	if err := json.NewDecoder(c.Request().Body).Decode(form); err != nil {
 		return c.String(http.StatusBadRequest, string(e.RespJSONDecodeFailure))
+	}
+
+	if err := a.validator.Struct(form); err != nil {
+		respBody, err := json.Marshal(validatorUtil.ToErrResponse(err))
+		if err != nil {
+			return c.String(http.StatusBadRequest, string(e.RespJSONEncodeFailure))
+		}
+
+		return c.String(http.StatusBadRequest, string(respBody))
 	}
 
 	book := form.ToModel()
