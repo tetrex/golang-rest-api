@@ -93,12 +93,11 @@ func (a *API) Create(c echo.Context) error {
 //	@failure		500	{object}	err.Error
 //	@router			/books/{id} [get]
 func (a *API) Read(c echo.Context) error {
-	id, err := uuid.Parse(c.QueryParam("id"))
+	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		return c.String(http.StatusBadRequest, "uuid parsing error")
 	}
 	book, err := a.repository.Read(id)
-
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return c.String(http.StatusNotFound, "not found")
@@ -130,7 +129,7 @@ func (a *API) Read(c echo.Context) error {
 //	@failure		500	{object}	err.Error
 //	@router			/books/{id} [put]
 func (a *API) Update(c echo.Context) error {
-	id, err := uuid.Parse(c.QueryParam("id"))
+	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		return c.String(http.StatusBadRequest, "uuid parsing error")
 	}
@@ -171,7 +170,7 @@ func (a *API) Update(c echo.Context) error {
 //	@router			/books/{id} [delete]
 func (a *API) Delete(c echo.Context) error {
 
-	id, err := uuid.Parse(c.QueryParam("id"))
+	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		return c.String(http.StatusBadRequest, "uuid parsing error")
 	}

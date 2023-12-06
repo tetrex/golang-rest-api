@@ -22,9 +22,9 @@ func New(db *gorm.DB) *echo.Echo {
 
 	g.GET("/books", bookAPI.List)
 	g.POST("/books", bookAPI.Create)
-	g.GET("/books/{id}", bookAPI.Read)
-	g.PUT("/books/{id}", bookAPI.Update)
-	g.DELETE("/books/{id}", bookAPI.Delete)
+	g.GET("/books/:id", bookAPI.Read)
+	g.PUT("/books/:id", bookAPI.Update)
+	g.DELETE("/books/:id", bookAPI.Delete)
 
 	return r
 }
