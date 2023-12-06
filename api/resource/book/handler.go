@@ -145,7 +145,6 @@ func (a *API) Update(c echo.Context) error {
 
 	rows, err := a.repository.Update(book)
 	if err != nil {
-		// handle later
 		return c.String(http.StatusBadRequest, "update error")
 	}
 	if rows == 0 {
@@ -171,5 +170,22 @@ func (a *API) Update(c echo.Context) error {
 //	@failure		500	{object}	err.Error
 //	@router			/books/{id} [delete]
 func (a *API) Delete(c echo.Context) error {
-	return c.String(http.StatusOK, "delete")
+
+	id, err := uuid.Parse(c.QueryParam("id"))
+	if err != nil {
+		return c.String(http.StatusBadRequest, "uuid parsing error")
+	}
+
+	rows, err := a.repository.Delete(id)
+	if err != nil {
+		return c.String(http.StatusBadRequest, "delete error")
+	}
+	if rows == 0 {
+		return c.String(http.StatusBadRequest, "not enough deleted error")
+	}
+
+	c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+	c.Response().WriteHeader(http.StatusOK)
+
+	return c.String(http.StatusOK, "Deleted")
 }
