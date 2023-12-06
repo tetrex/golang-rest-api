@@ -7,6 +7,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
+
+	e "golang-rest-api/api/resource/common/err"
 )
 
 type API struct {
@@ -32,12 +34,11 @@ func New(db *gorm.DB) *API {
 func (a *API) List(c echo.Context) error {
 	books, err := a.repository.List()
 	if err != nil {
-		// handle later
-		return c.String(http.StatusBadRequest, "error")
+		return c.String(http.StatusBadRequest, string(e.RespDBDataAccessFailure))
 	}
 
 	if len(books) == 0 {
-		return c.String(http.StatusBadRequest, "error")
+		return c.String(http.StatusNoContent, string(e.RespNoDataFound))
 	}
 
 	u := books.ToDto()
@@ -63,7 +64,7 @@ func (a *API) List(c echo.Context) error {
 func (a *API) Create(c echo.Context) error {
 	form := new(Form)
 	if err := c.Bind(form); err != nil {
-		return c.String(http.StatusBadRequest, "bad request")
+		return c.String(http.StatusBadRequest, string(e.RespJSONDecodeFailure))
 	}
 
 	newBook := form.ToModel()
@@ -71,12 +72,12 @@ func (a *API) Create(c echo.Context) error {
 
 	_, err := a.repository.Create(newBook)
 	if err != nil {
-		return c.String(http.StatusBadRequest, "cant create")
+		return c.String(http.StatusBadRequest, string(e.RespDBDataInsertFailure))
 	}
 
 	c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 	c.Response().WriteHeader(http.StatusOK)
-	return c.String(http.StatusCreated, "ok")
+	return c.String(http.StatusCreated, newBook.ID.String())
 }
 
 // Read godoc
@@ -95,15 +96,15 @@ func (a *API) Create(c echo.Context) error {
 func (a *API) Read(c echo.Context) error {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		return c.String(http.StatusBadRequest, "uuid parsing error")
+		return c.String(http.StatusBadRequest, string(e.RespInvalidURLParamID))
 	}
 	book, err := a.repository.Read(id)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return c.String(http.StatusNotFound, "not found")
+			return c.String(http.StatusNotFound, string(e.RespNoDataFound))
 		}
 
-		return c.String(http.StatusBadRequest, "bad request")
+		return c.String(http.StatusBadRequest, string(e.RespDBDataAccessFailure))
 	}
 
 	dto := book.ToDto()
@@ -131,12 +132,12 @@ func (a *API) Read(c echo.Context) error {
 func (a *API) Update(c echo.Context) error {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		return c.String(http.StatusBadRequest, "uuid parsing error")
+		return c.String(http.StatusBadRequest, string(e.RespInvalidURLParamID))
 	}
 
 	form := &Form{}
 	if err := json.NewDecoder(c.Request().Body).Decode(form); err != nil {
-		return c.String(http.StatusBadRequest, "body parsing error")
+		return c.String(http.StatusBadRequest, string(e.RespJSONDecodeFailure))
 	}
 
 	book := form.ToModel()
@@ -144,15 +145,15 @@ func (a *API) Update(c echo.Context) error {
 
 	rows, err := a.repository.Update(book)
 	if err != nil {
-		return c.String(http.StatusBadRequest, "update error")
+		return c.String(http.StatusBadRequest, string(e.RespDBDataUpdateFailure))
 	}
 	if rows == 0 {
-		return c.String(http.StatusBadRequest, "not enough updated error")
+		return c.String(http.StatusBadRequest, string(e.RespNoDataFound))
 	}
 
 	c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 	c.Response().WriteHeader(http.StatusOK)
-	return c.String(http.StatusOK, "Ok")
+	return json.NewEncoder((c.Response())).Encode(book)
 }
 
 // Delete godoc
@@ -172,19 +173,19 @@ func (a *API) Delete(c echo.Context) error {
 
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		return c.String(http.StatusBadRequest, "uuid parsing error")
+		return c.String(http.StatusBadRequest, string(e.RespInvalidURLParamID))
 	}
 
 	rows, err := a.repository.Delete(id)
 	if err != nil {
-		return c.String(http.StatusBadRequest, "delete error")
+		return c.String(http.StatusBadRequest, string(e.RespDBDataRemoveFailure))
 	}
 	if rows == 0 {
-		return c.String(http.StatusBadRequest, "not enough deleted error")
+		return c.String(http.StatusBadRequest, string(e.RespNoDataFound))
 	}
 
 	c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 	c.Response().WriteHeader(http.StatusOK)
 
-	return c.String(http.StatusOK, "Deleted")
+	return c.String(http.StatusOK, "ok")
 }
