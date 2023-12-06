@@ -93,7 +93,25 @@ func (a *API) Create(c echo.Context) error {
 //	@failure		500	{object}	err.Error
 //	@router			/books/{id} [get]
 func (a *API) Read(c echo.Context) error {
-	return c.String(http.StatusOK, "read")
+	id, err := uuid.Parse(c.QueryParam("id"))
+	if err != nil {
+		return c.String(http.StatusBadRequest, "uuid parsing error")
+	}
+	book, err := a.repository.Read(id)
+
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return c.String(http.StatusNotFound, "not found")
+		}
+
+		return c.String(http.StatusBadRequest, "bad request")
+	}
+
+	dto := book.ToDto()
+
+	c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+	c.Response().WriteHeader(http.StatusOK)
+	return json.NewEncoder(c.Response()).Encode(dto)
 }
 
 // Update godoc
@@ -112,7 +130,31 @@ func (a *API) Read(c echo.Context) error {
 //	@failure		500	{object}	err.Error
 //	@router			/books/{id} [put]
 func (a *API) Update(c echo.Context) error {
-	return c.String(http.StatusOK, "update")
+	id, err := uuid.Parse(c.QueryParam("id"))
+	if err != nil {
+		return c.String(http.StatusBadRequest, "uuid parsing error")
+	}
+
+	form := &Form{}
+	if err := json.NewDecoder(c.Request().Body).Decode(form); err != nil {
+		return c.String(http.StatusBadRequest, "body parsing error")
+	}
+
+	book := form.ToModel()
+	book.ID = id
+
+	rows, err := a.repository.Update(book)
+	if err != nil {
+		// handle later
+		return c.String(http.StatusBadRequest, "update error")
+	}
+	if rows == 0 {
+		return c.String(http.StatusBadRequest, "not enough updated error")
+	}
+
+	c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+	c.Response().WriteHeader(http.StatusOK)
+	return c.String(http.StatusOK, "Ok")
 }
 
 // Delete godoc
